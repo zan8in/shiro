@@ -18,7 +18,14 @@ if err != nil {
     panic(err)
 }
 
-fmt.Println("shiro scanner finished")
+if result == nil {
+    fmt.Println("result is nil")
+    return
+}
+
+fmt.Printf("target: %s\n", result.Target)
+fmt.Printf("shiroKey: %s\n", result.ShiroKey)
+fmt.Printf("rememberMe: %s\n", result.RememberMe)
 ```
 
 
