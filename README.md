@@ -1,5 +1,5 @@
 # shiro
-
+Usage of the [afrog](https://github.com/zan8in/afrog) calling library.
 
 # Examples
 
