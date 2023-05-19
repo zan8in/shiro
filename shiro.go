@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/remeh/sizedwaitgroup"
 	uuid "github.com/satori/go.uuid"
 	"github.com/zan8in/retryablehttp"
 	"github.com/zan8in/shiro/pkg/req"
@@ -35,6 +36,13 @@ type Shiro struct {
 	req          *req.Req
 }
 
+type Result struct {
+	Flag       bool
+	Target     string
+	ShiroKey   string
+	RememberMe string
+}
+
 func NewShiro() (*Shiro, error) {
 	shiro := &Shiro{
 		shiroKeys:    ShiroKeys,
@@ -45,26 +53,34 @@ func NewShiro() (*Shiro, error) {
 	return shiro, nil
 }
 
-func (s *Shiro) Run(options Options) (err error) {
+func (s *Shiro) Run(options Options) (*Result, error) {
+	var (
+		result = &Result{}
+		err    error
+	)
+
 	s.req, err = req.New(&req.Options{
 		Proxy:   options.Proxy,
 		Timeout: options.Timeout,
 		Retries: options.Retries,
 	})
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	if len(options.Target) == 0 {
-		return fmt.Errorf("target is empty")
+		return result, fmt.Errorf("target is empty")
 	}
 
 	if !s.ShiroCheck(options.Target) {
 		ok, sk, rme := s.KeyCheck(options.Target)
-		fmt.Println(ok, sk, rme)
+		result.Flag = ok
+		result.Target = options.Target
+		result.ShiroKey = sk
+		result.RememberMe = rme
 	}
 
-	return nil
+	return result, err
 }
 
 func (s *Shiro) RunMulti(options Options) error {
@@ -76,60 +92,102 @@ func (s *Shiro) ShiroCheck(TargetUrl string) bool {
 	return ok
 }
 
+var cancel context.CancelFunc
+
 func (s *Shiro) KeyCheck(TargetUrl string) (bool, string, string) {
 	Content, _ := base64.StdEncoding.DecodeString(CheckContent)
-	var (
-		flag bool
-		sk   string
-		rme  string
-	)
 
-	for i := range ShiroKeys {
-		time.Sleep(time.Duration(0) * time.Second)
-		flag, sk, rme = s.FindTheKey(ShiroKeys[i], Content, TargetUrl)
-		if flag {
+	var result = make(chan *Result)
+
+	go func() {
+		ctx, cancelFunc := context.WithCancel(context.Background())
+		cancel = cancelFunc
+
+		ticker := time.NewTicker(time.Second / time.Duration(25))
+		swg := sizedwaitgroup.New(5)
+		for _, sk := range ShiroKeys {
+			swg.Add()
+			go func(sk string) {
+				defer swg.Done()
+				<-ticker.C
+
+				flag, sk, rme := s.FindTheKey(ctx, sk, Content, TargetUrl)
+				fmt.Println(flag)
+				if flag {
+					result <- &Result{
+						Flag:       flag,
+						Target:     TargetUrl,
+						ShiroKey:   sk,
+						RememberMe: rme,
+					}
+					cancel()
+				}
+
+			}(sk)
+		}
+		swg.Wait()
+
+		result <- &Result{Flag: false}
+	}()
+
+	for r := range result {
+		if r.Flag {
+			return r.Flag, r.ShiroKey, r.RememberMe
+		}
+		if !r.Flag {
 			break
 		}
 	}
-	return flag, sk, rme
+
+	return false, "", ""
 }
 
 // return three result
 // 1. result boolean
 // 2. shirokey
 // 3. rememberMe
-func (s *Shiro) FindTheKey(ShiroKey string, Content []byte, TargetUrl string) (bool, string, string) {
-	key, _ := base64.StdEncoding.DecodeString(ShiroKey)
-	// result := "[-] Key incorrect "
+func (s *Shiro) FindTheKey(ctx context.Context, ShiroKey string, Content []byte, TargetUrl string) (bool, string, string) {
 
-	var (
-		sk  string
-		rme string
-	)
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("--------------------")
+			return false, "", ""
+		default:
+			key, _ := base64.StdEncoding.DecodeString(ShiroKey)
+			// result := "[-] Key incorrect "
 
-	RememberMe, err := AesCbcEncrypt(key, Content)
-	if err != nil {
-		return false, sk, rme
-	}
-	ok, _ := s.HttpRequest(RememberMe, TargetUrl)
-	if ok {
-		// result = "[+] CBC-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
-		sk = ShiroKey
-		rme = RememberMe
-	} else {
-		RememberMe, err = AesGcmEncrypt(key, Content)
-		if err != nil {
-			return false, sk, rme
+			var (
+				sk  string
+				rme string
+			)
+
+			RememberMe, err := AesCbcEncrypt(key, Content)
+			if err != nil {
+				return false, sk, rme
+			}
+			ok, _ := s.HttpRequest(RememberMe, TargetUrl)
+			if ok {
+				// result = "[+] CBC-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
+				sk = ShiroKey
+				rme = RememberMe
+			} else {
+				RememberMe, err = AesGcmEncrypt(key, Content)
+				if err != nil {
+					return false, sk, rme
+				}
+				ok, _ = s.HttpRequest(RememberMe, TargetUrl)
+				if ok {
+					// result = "[+] GCM-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
+					sk = ShiroKey
+					rme = RememberMe
+				}
+			}
+
+			return ok, sk, rme
 		}
-		ok, _ = s.HttpRequest(RememberMe, TargetUrl)
-		if ok {
-			// result = "[+] GCM-KEY:" + ShiroKey + "\n[+] rememberMe=" + RememberMe
-			sk = ShiroKey
-			rme = RememberMe
-		}
 	}
 
-	return ok, sk, rme
 }
 
 func Padding(plainText []byte, blockSize int) []byte {

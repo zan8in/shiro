@@ -28,7 +28,7 @@ func New(opts *Options) (*Req, error) {
 	}
 
 	if opts.Retries == 0 {
-		opts.Retries = 3
+		opts.Retries = 1
 	}
 
 	po := &retryablehttp.DefaultPoolOptions
