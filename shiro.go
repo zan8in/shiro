@@ -112,7 +112,6 @@ func (s *Shiro) KeyCheck(TargetUrl string) (bool, string, string) {
 				<-ticker.C
 
 				flag, sk, rme := s.FindTheKey(ctx, sk, Content, TargetUrl)
-				fmt.Println(flag)
 				if flag {
 					result <- &Result{
 						Flag:       flag,

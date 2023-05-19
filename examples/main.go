@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/zan8in/shiro"
 )
@@ -20,14 +19,13 @@ func main() {
 		panic(err)
 	}
 
-	// if result == nil {
-	// 	fmt.Println("result is nil")
-	// 	return
-	// }
+	if result == nil {
+		fmt.Println("result is nil")
+		return
+	}
 
 	fmt.Printf("target: %s\n", result.Target)
 	fmt.Printf("shiroKey: %s\n", result.ShiroKey)
 	fmt.Printf("rememberMe: %s\n", result.RememberMe)
 
-	time.Sleep(30 * time.Second)
 }
