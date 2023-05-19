@@ -150,7 +150,6 @@ func (s *Shiro) FindTheKey(ctx context.Context, ShiroKey string, Content []byte,
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("--------------------")
 			return false, "", ""
 		default:
 			key, _ := base64.StdEncoding.DecodeString(ShiroKey)

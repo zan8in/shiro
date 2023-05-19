@@ -11,7 +11,7 @@ if err != nil {
     panic(err)
 }
 
-err = s.Run(shiro.Options{
+result, err := s.Run(shiro.Options{
     Target: "http://x.x.x.x:8090",
 })
 if err != nil {
