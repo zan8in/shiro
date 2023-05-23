@@ -36,34 +36,6 @@ type Options struct {
 	ConcurrencyTarget int
 }
 
-func (opt *Options) rateLimitKey() time.Duration {
-	if opt.RateLimitKey == 0 {
-		return time.Duration(60)
-	}
-	return opt.RateLimitKey
-}
-
-func (opt *Options) rateLimitTarget() time.Duration {
-	if opt.RateLimitTarget == 0 {
-		return time.Duration(2)
-	}
-	return opt.RateLimitTarget
-}
-
-func (opt *Options) concurrencyKey() int {
-	if opt.ConcurrencyKey == 0 {
-		return 25
-	}
-	return opt.ConcurrencyKey
-}
-
-func (opt *Options) concurrencyTarget() int {
-	if opt.ConcurrencyTarget == 0 {
-		return 5
-	}
-	return opt.ConcurrencyTarget
-}
-
 type Shiro struct {
 	options      *Options
 	shiroKeys    []string
@@ -97,7 +69,7 @@ func (s *Shiro) Run(options Options) (*Result, error) {
 
 	s.options = &options
 
-	fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
+	// fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
 
 	s.req, err = req.New(&req.Options{
 		Proxy:   options.Proxy,
@@ -138,7 +110,7 @@ func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
 
 	s.options = &options
 
-	fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
+	// fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
 
 	var (
 		err error
@@ -360,4 +332,32 @@ func (s *Shiro) HttpRequest(RememberMe string, TargetUrl string) (bool, error) {
 	}
 	return !strings.Contains(SetCookieAll, "rememberMe=deleteMe;"), nil
 
+}
+
+func (opt *Options) rateLimitKey() time.Duration {
+	if opt.RateLimitKey == 0 {
+		return time.Duration(60)
+	}
+	return opt.RateLimitKey
+}
+
+func (opt *Options) rateLimitTarget() time.Duration {
+	if opt.RateLimitTarget == 0 {
+		return time.Duration(2)
+	}
+	return opt.RateLimitTarget
+}
+
+func (opt *Options) concurrencyKey() int {
+	if opt.ConcurrencyKey == 0 {
+		return 25
+	}
+	return opt.ConcurrencyKey
+}
+
+func (opt *Options) concurrencyTarget() int {
+	if opt.ConcurrencyTarget == 0 {
+		return 5
+	}
+	return opt.ConcurrencyTarget
 }
