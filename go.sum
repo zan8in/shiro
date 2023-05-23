@@ -27,8 +27,6 @@ github.com/zan8in/fileutil v0.0.0-20220917063910-ce47dcc0cfa9 h1:WwIlLuTbEEzJHh0
 github.com/zan8in/fileutil v0.0.0-20220917063910-ce47dcc0cfa9/go.mod h1:IMXMxKc8XnbwVGoe2cie8JYP2rF4R6DIJh4mMniInUQ=
 github.com/zan8in/goflags v0.0.0-20230204144650-0745934af58a h1:kgpEfiv4FDkAthNB5RQHAZ/fJEVitbcrLOJDeUCRVyY=
 github.com/zan8in/goflags v0.0.0-20230204144650-0745934af58a/go.mod h1:SU2BjeuADHecx3khPTkSgkYMvd89YFJnu8YhFDGRIdM=
-github.com/zan8in/pins v0.0.0-20230415064757-40257618b466 h1:3FGXsUq3s+y8D4XJY8xwWHsBSxuDs9bOqaSUokZ2wW0=
-github.com/zan8in/pins v0.0.0-20230415064757-40257618b466/go.mod h1:hwq0CUJ14mXaWUCNaD2WXj7aKwUJfuOP0fIt9mpy6i0=
 github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec h1:THHj+3+Yr4fSj1IPacW4fudEWIhMI+kosEX+RF6xOac=
 github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec/go.mod h1:hwq0CUJ14mXaWUCNaD2WXj7aKwUJfuOP0fIt9mpy6i0=
 github.com/zan8in/retryablehttp v0.0.0-20230424151727-99fdd3c661d7 h1:hso8sYwVmhfP+c1WWxwGV53vveVHlJyNNDpWrdprAHs=

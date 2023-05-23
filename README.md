@@ -1,6 +1,28 @@
 # shiro
 Usage of the [afrog](https://github.com/zan8in/afrog) calling library.
 
+# Running Shiro
+
+## Single Target
+```sh
+shiro -t https://example.com
+```
+
+## Multiple Target
+```sh
+shiro -T urls.txt
+```
+
+## Custom Keys
+```sh
+shiro -T urls.txt -K keys.txt
+```
+
+## More Command
+```sh
+shiro -h
+```
+
 # Examples
 
 ## Single Target

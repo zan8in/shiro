@@ -5,6 +5,8 @@ go 1.20
 require (
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/zan8in/goflags v0.0.0-20230204144650-0745934af58a
+	github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec
 	github.com/zan8in/retryablehttp v0.0.0-20230424151727-99fdd3c661d7
 )
 
@@ -19,8 +21,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/zan8in/fileutil v0.0.0-20220917063910-ce47dcc0cfa9 // indirect
-	github.com/zan8in/goflags v0.0.0-20230204144650-0745934af58a // indirect
-	github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec // indirect
 	github.com/zan8in/stringsutil v0.0.0-20220917064022-03a0bd835142 // indirect
 	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
