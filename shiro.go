@@ -14,6 +14,7 @@ import (
 
 	"github.com/remeh/sizedwaitgroup"
 	uuid "github.com/satori/go.uuid"
+	fileutil "github.com/zan8in/pins/file"
 	randutil "github.com/zan8in/pins/rand"
 	"github.com/zan8in/retryablehttp"
 	"github.com/zan8in/shiro/pkg/req"
@@ -84,8 +85,53 @@ func (s *Shiro) Run(options Options) (*Result, error) {
 	return result, err
 }
 
-func (s *Shiro) RunMulti(options Options) error {
-	return nil
+func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
+	if len(options.TargetFile) == 0 {
+		return nil, fmt.Errorf("target file is not specified")
+	}
+
+	urls, err := fileutil.ReadFile(options.TargetFile)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(chan *Result)
+
+	go func() {
+		defer close(result)
+
+		ticker := time.NewTicker(time.Second / time.Duration(25))
+		swg := sizedwaitgroup.New(5)
+
+		for url := range urls {
+			swg.Add()
+
+			go func(url string) {
+				defer swg.Done()
+				<-ticker.C
+
+				opt := options
+				opt.Target = url
+				rst, err := s.Run(opt)
+
+				if err != nil {
+					panic(err)
+				}
+
+				if result == nil {
+					fmt.Println("result is nil")
+					return
+				}
+
+				if len(rst.ShiroKey) > 0 {
+					result <- rst
+				}
+
+			}(url)
+		}
+	}()
+
+	return result, nil
 }
 
 func (s *Shiro) ShiroCheck(TargetUrl string) bool {
