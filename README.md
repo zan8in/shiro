@@ -5,27 +5,84 @@ Usage of the [afrog](https://github.com/zan8in/afrog) calling library.
 
 ## Single Target
 
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/zan8in/shiro"
+)
+
+func main() {
+	s, err := shiro.NewShiro()
+	if err != nil {
+		panic(err)
+	}
+
+	result, err := s.Run(shiro.Options{
+		Target:            "http://x.x.x.x:8090",
+		RateLimitKey:      time.Duration(20),
+		RateLimitTarget:   time.Duration(10),
+		ConcurrencyKey:    2,
+		ConcurrencyTarget: 6,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	if result == nil {
+		fmt.Println("result is nil")
+		return
+	}
+
+	fmt.Printf("target: %s\n", result.Target)
+	fmt.Printf("shiroKey: %s\n", result.ShiroKey)
+	fmt.Printf("rememberMe: %s\n", result.RememberMe)
+
+}
 ```
-s, err := shiro.NewShiro()
-if err != nil {
-    panic(err)
+
+## Multi Target
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/zan8in/shiro"
+)
+
+func main() {
+	s, err := shiro.NewShiro()
+	if err != nil {
+		panic(err)
+	}
+
+	result, err := s.RunMulti(shiro.Options{
+		TargetFile:        "./1.txt",
+		ShiroKeysFile:     "./keys.txt",
+		RateLimitKey:      time.Duration(20),
+		RateLimitTarget:   time.Duration(10),
+		ConcurrencyKey:    2,
+		ConcurrencyTarget: 6,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	for v := range result {
+		fmt.Printf("target: %s\n", v.Target)
+		fmt.Printf("shiroKey: %s\n", v.ShiroKey)
+		fmt.Printf("rememberMe: %s\n", v.RememberMe)
+		fmt.Println("-----------------------")
+	}
+
 }
 
-result, err := s.Run(shiro.Options{
-    Target: "http://x.x.x.x:8090",
-})
-if err != nil {
-    panic(err)
-}
-
-if result == nil {
-    fmt.Println("result is nil")
-    return
-}
-
-fmt.Printf("target: %s\n", result.Target)
-fmt.Printf("shiroKey: %s\n", result.ShiroKey)
-fmt.Printf("rememberMe: %s\n", result.RememberMe)
 ```
 
 

@@ -29,9 +29,43 @@ type Options struct {
 	Proxy   string
 	Timeout int
 	Retries int
+
+	RateLimitKey      time.Duration
+	RateLimitTarget   time.Duration
+	ConcurrencyKey    int
+	ConcurrencyTarget int
+}
+
+func (opt *Options) rateLimitKey() time.Duration {
+	if opt.RateLimitKey == 0 {
+		return time.Duration(60)
+	}
+	return opt.RateLimitKey
+}
+
+func (opt *Options) rateLimitTarget() time.Duration {
+	if opt.RateLimitTarget == 0 {
+		return time.Duration(2)
+	}
+	return opt.RateLimitTarget
+}
+
+func (opt *Options) concurrencyKey() int {
+	if opt.ConcurrencyKey == 0 {
+		return 25
+	}
+	return opt.ConcurrencyKey
+}
+
+func (opt *Options) concurrencyTarget() int {
+	if opt.ConcurrencyTarget == 0 {
+		return 5
+	}
+	return opt.ConcurrencyTarget
 }
 
 type Shiro struct {
+	options      *Options
 	shiroKeys    []string
 	checkContent string
 	shiroMethod  string
@@ -61,6 +95,10 @@ func (s *Shiro) Run(options Options) (*Result, error) {
 		err    error
 	)
 
+	s.options = &options
+
+	fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
+
 	s.req, err = req.New(&req.Options{
 		Proxy:   options.Proxy,
 		Timeout: options.Timeout,
@@ -72,6 +110,14 @@ func (s *Shiro) Run(options Options) (*Result, error) {
 
 	if len(options.Target) == 0 {
 		return result, fmt.Errorf("target is empty")
+	}
+
+	if len(options.ShiroKeysFile) > 0 {
+		if list, err := fileutil.ReadFile(options.ShiroKeysFile); err == nil {
+			for key := range list {
+				s.shiroKeys = append(s.shiroKeys, key)
+			}
+		}
 	}
 
 	if !s.ShiroCheck(options.Target) {
@@ -90,6 +136,31 @@ func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
 		return nil, fmt.Errorf("target file is not specified")
 	}
 
+	s.options = &options
+
+	fmt.Println(options.rateLimitKey(), options.rateLimitTarget(), options.concurrencyKey(), options.concurrencyTarget())
+
+	var (
+		err error
+	)
+
+	s.req, err = req.New(&req.Options{
+		Proxy:   options.Proxy,
+		Timeout: options.Timeout,
+		Retries: options.Retries,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(options.ShiroKeysFile) > 0 {
+		if list, err := fileutil.ReadFile(options.ShiroKeysFile); err == nil {
+			for key := range list {
+				s.shiroKeys = append(s.shiroKeys, key)
+			}
+		}
+	}
+
 	urls, err := fileutil.ReadFile(options.TargetFile)
 	if err != nil {
 		return nil, err
@@ -100,8 +171,8 @@ func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
 	go func() {
 		defer close(result)
 
-		ticker := time.NewTicker(time.Second / time.Duration(25))
-		swg := sizedwaitgroup.New(5)
+		ticker := time.NewTicker(time.Second / s.options.rateLimitTarget())
+		swg := sizedwaitgroup.New(s.options.concurrencyTarget())
 
 		for url := range urls {
 			swg.Add()
@@ -110,23 +181,17 @@ func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
 				defer swg.Done()
 				<-ticker.C
 
-				opt := options
-				opt.Target = url
-				rst, err := s.Run(opt)
-
-				if err != nil {
-					panic(err)
+				if !s.ShiroCheck(url) {
+					ok, sk, rme := s.KeyCheck(url)
+					if len(sk) > 0 {
+						result <- &Result{
+							Flag:       ok,
+							Target:     url,
+							ShiroKey:   sk,
+							RememberMe: rme,
+						}
+					}
 				}
-
-				if result == nil {
-					fmt.Println("result is nil")
-					return
-				}
-
-				if len(rst.ShiroKey) > 0 {
-					result <- rst
-				}
-
 			}(url)
 		}
 	}()
@@ -150,9 +215,9 @@ func (s *Shiro) KeyCheck(TargetUrl string) (bool, string, string) {
 		ctx, cancelFunc := context.WithCancel(context.Background())
 		cancel = cancelFunc
 
-		ticker := time.NewTicker(time.Second / time.Duration(25))
-		swg := sizedwaitgroup.New(5)
-		for _, sk := range ShiroKeys {
+		ticker := time.NewTicker(time.Second / s.options.rateLimitKey())
+		swg := sizedwaitgroup.New(int(s.options.concurrencyKey()))
+		for _, sk := range s.shiroKeys {
 			swg.Add()
 			go func(sk string) {
 				defer swg.Done()

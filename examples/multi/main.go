@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/zan8in/shiro"
 )
@@ -13,7 +14,12 @@ func main() {
 	}
 
 	result, err := s.RunMulti(shiro.Options{
-		TargetFile: "./1.txt",
+		TargetFile:        "./1.txt",
+		ShiroKeysFile:     "./keys.txt",
+		RateLimitKey:      time.Duration(20),
+		RateLimitTarget:   time.Duration(10),
+		ConcurrencyKey:    2,
+		ConcurrencyTarget: 6,
 	})
 	if err != nil {
 		panic(err)

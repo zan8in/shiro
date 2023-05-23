@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/zan8in/shiro"
 )
@@ -13,7 +14,11 @@ func main() {
 	}
 
 	result, err := s.Run(shiro.Options{
-		Target: "http://82.156.89.190:8090",
+		Target:            "http://82.156.89.190:8090",
+		RateLimitKey:      time.Duration(20),
+		RateLimitTarget:   time.Duration(10),
+		ConcurrencyKey:    2,
+		ConcurrencyTarget: 6,
 	})
 	if err != nil {
 		panic(err)
