@@ -30,8 +30,8 @@ type Options struct {
 	Timeout int
 	Retries int
 
-	RateLimitKey      time.Duration
-	RateLimitTarget   time.Duration
+	RateLimitKey      int
+	RateLimitTarget   int
 	ConcurrencyKey    int
 	ConcurrencyTarget int
 }
@@ -143,7 +143,7 @@ func (s *Shiro) RunMulti(options Options) (chan *Result, error) {
 	go func() {
 		defer close(result)
 
-		ticker := time.NewTicker(time.Second / s.options.rateLimitTarget())
+		ticker := time.NewTicker(time.Second / time.Duration(s.options.rateLimitTarget()))
 		swg := sizedwaitgroup.New(s.options.concurrencyTarget())
 
 		for url := range urls {
@@ -187,7 +187,7 @@ func (s *Shiro) KeyCheck(TargetUrl string) (bool, string, string) {
 		ctx, cancelFunc := context.WithCancel(context.Background())
 		cancel = cancelFunc
 
-		ticker := time.NewTicker(time.Second / s.options.rateLimitKey())
+		ticker := time.NewTicker(time.Second / time.Duration(s.options.rateLimitKey()))
 		swg := sizedwaitgroup.New(int(s.options.concurrencyKey()))
 		for _, sk := range s.shiroKeys {
 			swg.Add()
@@ -334,16 +334,16 @@ func (s *Shiro) HttpRequest(RememberMe string, TargetUrl string) (bool, error) {
 
 }
 
-func (opt *Options) rateLimitKey() time.Duration {
+func (opt *Options) rateLimitKey() int {
 	if opt.RateLimitKey == 0 {
-		return time.Duration(60)
+		return 60
 	}
 	return opt.RateLimitKey
 }
 
-func (opt *Options) rateLimitTarget() time.Duration {
+func (opt *Options) rateLimitTarget() int {
 	if opt.RateLimitTarget == 0 {
-		return time.Duration(2)
+		return 2
 	}
 	return opt.RateLimitTarget
 }
