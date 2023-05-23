@@ -23,10 +23,8 @@ func main() {
 
 	result, err := s.Run(shiro.Options{
 		Target:            "http://x.x.x.x:8090",
-		RateLimitKey:      time.Duration(20),
-		RateLimitTarget:   time.Duration(10),
-		ConcurrencyKey:    2,
-		ConcurrencyTarget: 6,
+		RateLimitKey:      time.Duration(60),
+		ConcurrencyKey:    25,
 	})
 	if err != nil {
 		panic(err)
@@ -65,10 +63,10 @@ func main() {
 	result, err := s.RunMulti(shiro.Options{
 		TargetFile:        "./1.txt",
 		ShiroKeysFile:     "./keys.txt",
-		RateLimitKey:      time.Duration(20),
-		RateLimitTarget:   time.Duration(10),
-		ConcurrencyKey:    2,
-		ConcurrencyTarget: 6,
+		RateLimitKey:      time.Duration(60),
+		RateLimitTarget:   time.Duration(5),
+		ConcurrencyKey:    25,
+		ConcurrencyTarget: 2,
 	})
 	if err != nil {
 		panic(err)
