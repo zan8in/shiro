@@ -21,6 +21,8 @@ github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdh
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
 github.com/zan8in/pins v0.0.0-20230415064757-40257618b466 h1:3FGXsUq3s+y8D4XJY8xwWHsBSxuDs9bOqaSUokZ2wW0=
 github.com/zan8in/pins v0.0.0-20230415064757-40257618b466/go.mod h1:hwq0CUJ14mXaWUCNaD2WXj7aKwUJfuOP0fIt9mpy6i0=
+github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec h1:THHj+3+Yr4fSj1IPacW4fudEWIhMI+kosEX+RF6xOac=
+github.com/zan8in/pins v0.0.0-20230523123221-68725c8867ec/go.mod h1:hwq0CUJ14mXaWUCNaD2WXj7aKwUJfuOP0fIt9mpy6i0=
 github.com/zan8in/retryablehttp v0.0.0-20230424151727-99fdd3c661d7 h1:hso8sYwVmhfP+c1WWxwGV53vveVHlJyNNDpWrdprAHs=
 github.com/zan8in/retryablehttp v0.0.0-20230424151727-99fdd3c661d7/go.mod h1:KPJ+327tfi0jnoLfzQL8nbBcO/BGP+sUU1inh4GrmDA=
 golang.org/x/net v0.9.0 h1:aWJ/m6xSmxWBx+V0XRHTlrYrPG56jKsLdTFmsSsCzOM=

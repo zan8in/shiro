@@ -14,6 +14,7 @@ import (
 
 	"github.com/remeh/sizedwaitgroup"
 	uuid "github.com/satori/go.uuid"
+	randutil "github.com/zan8in/pins/rand"
 	"github.com/zan8in/retryablehttp"
 	"github.com/zan8in/shiro/pkg/req"
 )
@@ -233,8 +234,8 @@ func (s *Shiro) HttpRequest(RememberMe string, TargetUrl string) (bool, error) {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 
-	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Cookie", "rememberMe="+RememberMe)
+	req.Header.Set("User-Agent", randutil.RandomUA())
+	req.Header.Set("Cookie", "JSESSIONID="+randutil.Randcase(8)+";rememberMe="+RememberMe)
 
 	resp, err := s.req.Do(req)
 	if err != nil {
